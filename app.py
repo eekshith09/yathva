@@ -11,16 +11,21 @@ from lime.lime_text import LimeTextExplainer
 app = Flask(__name__)
 CORS(app)
 
-# Load model + TF-IDF
+# -----------------------------
+# LOAD MODEL + TFIDF
+# -----------------------------
 model = pickle.load(open("model.pkl", "rb"))
 tfidf = pickle.load(open("tfidf.pkl", "rb"))
 
-# NLTK setup
+# -----------------------------
+# NLTK SETUP
+# -----------------------------
 nltk.download("stopwords")
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 
 def clean_text(text):
+    """Basic text cleaning"""
     if not isinstance(text, str):
         return ""
     text = text.lower()
@@ -30,9 +35,12 @@ def clean_text(text):
     words = [lemmatizer.lemmatize(w) for w in words]
     return " ".join(words)
 
-# Lime setup
+# LIME
 explainer = LimeTextExplainer(class_names=["Fake", "Real"])
 
+# -----------------------------
+# PREDICT ENDPOINT
+# -----------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
@@ -42,25 +50,20 @@ def predict():
         cleaned = clean_text(text)
         vectorized = tfidf.transform([cleaned])
 
-        # Predict
         prediction = model.predict(vectorized)[0]
-        probabilities = model.predict_proba(vectorized)[0]
+        proba = model.predict_proba(vectorized)[0]
 
         label = "REAL" if prediction == 1 else "FAKE"
-        confidence = round(float(probabilities[prediction] * 100), 2)
+        confidence = round(float(proba[prediction] * 100), 2)
 
-        # LIME explanation
         lime_exp = explainer.explain_instance(
             cleaned,
             lambda x: model.predict_proba(tfidf.transform(x)),
             num_features=5
         )
-        lime_words = [
-            {"word": w, "weight": float(score)}
-            for w, score in lime_exp.as_list()
-        ]
 
-        # Explanation
+        lime_words = [{"word": w, "weight": float(score)} for w, score in lime_exp.as_list()]
+
         explanation_text = (
             "This headline matches patterns commonly found in reliable news."
             if label == "REAL"
@@ -77,6 +80,7 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-if __name__ == "__main__":
-    app.run(debug=True) 
+# -----------------------------
+# DO NOT USE app.run() ON RENDER
+# -----------------------------
+# Render starts the app automatically using Gunicorn

@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
 
   return {
-    base: './',   // ⭐ IMPORTANT FOR GITHUB PAGES
+    base: './',   // ⭐ Required for GitHub Pages
 
     server: {
       port: 3000,
@@ -16,8 +16,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
 
     define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+
+      // ⭐ IMPORTANT — Set Render Backend API
+      'process.env.VITE_API_URL': JSON.stringify("https://yathva.onrender.com")
     },
 
     resolve: {
