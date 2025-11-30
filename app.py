@@ -1,58 +1,26 @@
-import pickle
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import nltk
-import re
-import string
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from lime.lime_text import LimeTextExplainer
-import traceback
-
-app = Flask(__name__)
-CORS(app)
-
-# -----------------------------
-# LOAD MODEL + TFIDF
-# -----------------------------
-model = pickle.load(open("model.pkl", "rb"))
-tfidf = pickle.load(open("tfidf.pkl", "rb"))
-
-# -----------------------------
-# NLTK SETUP
-# -----------------------------
-nltk.download("stopwords")
-stop_words = set(stopwords.words("english"))
-lemmatizer = WordNetLemmatizer()
-
-def clean_text(text):
-    """Basic text cleaning"""
-    if not isinstance(text, str):
-        return ""
-    text = text.lower()
-    text = re.sub(r"\d+", "", text)
-    text = text.translate(str.maketrans("", "", string.punctuation))
-    words = [w for w in text.split() if w not in stop_words]
-    words = [lemmatizer.lemmatize(w) for w in words]
-    return " ".join(words)
-
-# LIME
-explainer = LimeTextExplainer(class_names=["Fake", "Real"])
-
-# -----------------------------
-# PREDICT ENDPOINT
-# -----------------------------
 @app.route("/predict", methods=["POST"])
 def predict():
+    import traceback
     try:
+        print("🔥 /predict HIT")
+
         data = request.get_json()
+        print("📥 Incoming JSON:", data)
+
         text = data.get("text", "")
+        print("📝 Raw text:", text)
 
         cleaned = clean_text(text)
+        print("🧹 Cleaned text:", cleaned)
+
         vectorized = tfidf.transform([cleaned])
+        print("🔢 Vectorized shape:", vectorized.shape)
 
         prediction = model.predict(vectorized)[0]
         proba = model.predict_proba(vectorized)[0]
+
+        print("🎯 Prediction:", prediction)
+        print("📊 Probabilities:", proba)
 
         label = "REAL" if prediction == 1 else "FAKE"
         confidence = round(float(proba[prediction] * 100), 2)
@@ -62,6 +30,7 @@ def predict():
             lambda x: model.predict_proba(tfidf.transform(x)),
             num_features=5
         )
+        print("💡 LIME generated")
 
         lime_words = [{"word": w, "weight": float(score)} for w, score in lime_exp.as_list()]
 
@@ -79,10 +48,13 @@ def predict():
         })
 
     except Exception as e:
+        error_msg = str(e)
+        error_trace = traceback.format_exc()
+
+        print("❌ ERROR:", error_msg)
+        print(error_trace)
+
         return jsonify({
-            "error": str(e),
-            "trace": traceback.format_exc()
+            "error": error_msg,
+            "trace": error_trace
         }), 500
-
-
-# DO NOT ADD app.run()
