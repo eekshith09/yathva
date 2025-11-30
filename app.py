@@ -7,6 +7,7 @@ import string
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from lime.lime_text import LimeTextExplainer
+import traceback
 
 app = Flask(__name__)
 CORS(app)
@@ -78,9 +79,10 @@ def predict():
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e),
+            "trace": traceback.format_exc()
+        }), 500
 
-# -----------------------------
-# DO NOT USE app.run() ON RENDER
-# -----------------------------
-# Render starts the app automatically using Gunicorn
+
+# DO NOT ADD app.run()
