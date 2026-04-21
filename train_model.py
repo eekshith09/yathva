@@ -28,7 +28,7 @@ def clean_text(text):
     return " ".join(words)
 
 # Load datasets
-base = "C:/Yathva/datasets/"
+base = "datasets/"
 politifact_real = pd.read_csv(base + "politifact_real.csv")
 politifact_fake = pd.read_csv(base + "politifact_fake.csv")
 gossipcop_real = pd.read_csv(base + "gossipcop_real.csv")
