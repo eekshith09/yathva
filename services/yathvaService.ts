@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:5000"
+const API_URL = "https://yathva-1.onrender.com"
 
 export async function analyzeNewsContent(text: string) {
   const response = await fetch(`${API_URL}/predict`, {
